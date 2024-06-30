@@ -1,26 +1,18 @@
 #ifndef TREE_HPP
 #define TREE_HPP
 
-#include <memory>
 #include <iostream>
 #include <queue>
 #include <stack>
 #include <stdexcept>
 #include <vector>
 #include <algorithm>
-//#include <QMainWindow>
-
-
 #include "node.hpp"
-
-
-class MainWindow;
-
 
 template <typename T, int K = 2>
 class Tree {
 public:
-    std::shared_ptr<Node<T>> root;
+    Node<T>* root;
 
     Tree() : root(nullptr) {}
 
@@ -29,23 +21,26 @@ public:
     }
 
     void add_root(T value) {
-        root = std::make_shared<Node<T>>(value);
+        root = new Node<T>(value);
     }
 
-    void add_sub_node(std::shared_ptr<Node<T>> parent, T value) {
+    void add_sub_node(Node<T>* parent, T value) {
         if (parent->children.size() >= K) {
             throw std::runtime_error("Maximum number of children reached");
         }
-        auto child = std::make_shared<Node<T>>(value);
+        Node<T>* child = new Node<T>(value);
         parent->add_child(child);
     }
 
     // Pre-Order Iterator
     class PreOrderIterator {
     private:
-        std::stack<std::shared_ptr<Node<T>>> stack;
+        std::stack<Node<T>*> stack;
+
     public:
-        PreOrderIterator(std::shared_ptr<Node<T>> root) {
+        PreOrderIterator(Node<T>* root) {
+            if(K > 2)
+                throw std::invalid_argument("PreOrderIterator work just on binary tree !");
             if (root) stack.push(root);
         }
 
@@ -59,16 +54,16 @@ public:
 
         PreOrderIterator& operator++() {
             if (!stack.empty()) {
-                auto node = stack.top();
+                Node<T>* node = stack.top();
                 stack.pop();
                 for (auto it = node->children.rbegin(); it != node->children.rend(); ++it) {
-                    stack.push(*it);
+                    stack.push(*it);  // Push raw pointer *it
                 }
             }
             return *this;
         }
 
-        std::shared_ptr<Node<T>> operator*() const {
+        Node<T>* operator*() const {
             if (!stack.empty()) {
                 return stack.top();
             }
@@ -87,9 +82,10 @@ public:
     // BFS Iterator
     class BFSIterator {
     private:
-        std::queue<std::shared_ptr<Node<T>>> queue;
+        std::queue<Node<T>*> queue;
+
     public:
-        BFSIterator(std::shared_ptr<Node<T>> root) {
+        BFSIterator(Node<T>* root) {
             if (root) queue.push(root);
         }
 
@@ -103,7 +99,7 @@ public:
 
         BFSIterator& operator++() {
             if (!queue.empty()) {
-                auto node = queue.front();
+                Node<T>* node = queue.front();
                 queue.pop();
                 for (auto& child : node->children) {
                     queue.push(child);
@@ -112,7 +108,7 @@ public:
             return *this;
         }
 
-        std::shared_ptr<Node<T>> operator*() const {
+        Node<T>* operator*() const {
             return queue.front();
         }
     };
@@ -128,9 +124,10 @@ public:
     // DFS Iterator
     class DFSIterator {
     private:
-        std::stack<std::shared_ptr<Node<T>>> stack;
+        std::stack<Node<T>*> stack;
+
     public:
-        DFSIterator(std::shared_ptr<Node<T>> root) {
+        DFSIterator(Node<T>* root) {
             if (root) stack.push(root);
         }
 
@@ -144,16 +141,16 @@ public:
 
         DFSIterator& operator++() {
             if (!stack.empty()) {
-                auto node = stack.top();
+                Node<T>* node = stack.top();
                 stack.pop();
                 for (auto it = node->children.rbegin(); it != node->children.rend(); ++it) {
-                    stack.push(*it);
+                    stack.push(*it);  // Push raw pointer *it
                 }
             }
             return *this;
         }
 
-        std::shared_ptr<Node<T>> operator*() const {
+        Node<T>* operator*() const {
             return stack.top();
         }
     };
@@ -166,93 +163,91 @@ public:
         return DFSIterator(nullptr);
     }
 
-    // Post-Order Iterator
-    class PostOrderIterator {
-    private:
-        std::stack<std::shared_ptr<Node<T>>> stack;
-        std::shared_ptr<Node<T>> last_visited;
-        std::shared_ptr<Node<T>> current;
-    public:
-        PostOrderIterator(std::shared_ptr<Node<T>> root) : last_visited(nullptr), current(root) {
-            if (current) {
-                while (current) {
-                    stack.push(current);
-                    if (!current->children.empty()) {
-                        current = current->children.front();
-                    } else {
-                        current = nullptr;
-                    }
-                }
-            }
+// Post-Order Iterator (only for binary trees)
+class PostOrderIterator {
+private:
+    std::stack<Node<T>*> stack;
+    Node<T>* current;
+
+public:
+    PostOrderIterator(Node<T>* root) : current(root) {
+        if(K > 2)
+                throw std::invalid_argument("PostOrderIterator work just on binary tree !");
+        if (root) {
+            pushLeftMostNodes(root);
+        }
+    }
+
+    bool operator!=(const PostOrderIterator& other) const {
+        return stack != other.stack;
+    }
+
+    bool operator==(const PostOrderIterator& other) const {
+        return stack == other.stack;
+    }
+
+    PostOrderIterator& operator++() {
+        if (stack.empty()) return *this;
+
+        current = stack.top();
+        stack.pop();
+
+        if (!stack.empty() && stack.top()->children.size() > 0 && current == stack.top()->children.front()) {
+            pushLeftMostNodes(stack.top()->children.back());
         }
 
-        bool operator!=(const PostOrderIterator& other) const {
-            return stack != other.stack;
+        return *this;
+    }
+
+    Node<T>* operator*() const {
+        if (!stack.empty()) {
+            return stack.top();
         }
+        return nullptr;
+    }
 
-        bool operator==(const PostOrderIterator& other) const {
-            return stack == other.stack;
-        }
-
-        PostOrderIterator& operator++() {
-            if (stack.empty()) return *this;
-
-            auto node = stack.top();
-            stack.pop();
-
-            // Check if we're moving up the tree
-            if (!stack.empty() && node == stack.top()->children.back()) {
-                current = stack.top();
+private:
+    void pushLeftMostNodes(Node<T>* node) {
+        while (node) {
+            stack.push(node);
+            if (!node->children.empty()) {
+                node = node->children.front();
             } else {
-                current = nullptr;
+                node = nullptr;
             }
-
-            // Push right children onto the stack
-            if (!node->children.empty() && last_visited != node->children.back()) {
-                current = node->children.back();
-                while (current) {
-                    stack.push(current);
-                    if (!current->children.empty()) {
-                        current = current->children.front();
-                    } else {
-                        current = nullptr;
-                    }
-                }
-            }
-
-            last_visited = node;
-            return *this;
         }
-
-        std::shared_ptr<Node<T>> operator*() const {
-            if (!stack.empty()) {
-                return stack.top();
-            }
-            return nullptr;
-        }
-    };
-
-    PostOrderIterator begin_post_order() const {
-        return PostOrderIterator(root);
     }
+};
 
-    PostOrderIterator end_post_order() const {
-        return PostOrderIterator(nullptr);
-    }
+// Function to get the beginning of PostOrderIterator
+PostOrderIterator begin_post_order() const {
+    return PostOrderIterator(root);
+}
+
+// Function to get the end of PostOrderIterator
+PostOrderIterator end_post_order() const {
+    return PostOrderIterator(nullptr);
+}
+
 
 
     // In-Order Iterator (only for binary trees)
     class InOrderIterator {
     private:
-        std::stack<std::shared_ptr<Node<T>>> stack;
-        std::shared_ptr<Node<T>> current;
+        std::stack<Node<T>*> stack;
+        Node<T>* current;
+
     public:
-        InOrderIterator(std::shared_ptr<Node<T>> root) : current(root) {
+        InOrderIterator(Node<T>* root) : current(root) {
+             if(K > 2)
+                throw std::invalid_argument("InOrderIterator work just on binary tree !");
+            
             while (current) {
                 stack.push(current);
                 current = (current->children.empty()) ? nullptr : current->children[0];
             }
         }
+        
 
         bool operator!=(const InOrderIterator& other) const {
             return stack != other.stack;
@@ -281,7 +276,7 @@ public:
             return *this;
         }
 
-        std::shared_ptr<Node<T>> operator*() const {
+        Node<T>* operator*() const {
             if (!stack.empty()) {
                 return stack.top();
             }
@@ -297,25 +292,24 @@ public:
         return InOrderIterator(nullptr);
     }
 
-
-    // Transform to min-heap
+    // Transform to min-heap (only for binary trees)
     void myHeap() {
         if (K != 2) {
             throw std::runtime_error("Heap transformation only supported for binary trees (K=2)");
         }
 
-        std::vector<std::shared_ptr<Node<T>>> nodes;
+        std::vector<Node<T>*> nodes;
         collect_nodes(root, nodes);
 
-        std::make_heap(nodes.begin(), nodes.end(), [](std::shared_ptr<Node<T>> a, std::shared_ptr<Node<T>> b) {
+        std::make_heap(nodes.begin(), nodes.end(), [](Node<T>* a, Node<T>* b) {
             return a->value > b->value; // For min-heap, the parent should be less than children
         });
 
         build_heap_tree(nodes);
     }
 
-// Collect all nodes in a vector
-    void collect_nodes(std::shared_ptr<Node<T>> node, std::vector<std::shared_ptr<Node<T>>>& nodes) {
+    // Collect all nodes in a vector
+    void collect_nodes(Node<T>* node, std::vector<Node<T>*>& nodes) {
         if (!node) return;
         nodes.push_back(node);
         for (auto& child : node->children) {
@@ -323,20 +317,20 @@ public:
         }
     }
 
-// Build a heap tree from a vector of nodes
-    void build_heap_tree(std::vector<std::shared_ptr<Node<T>>>& nodes) {
+    // Build a heap tree from a vector of nodes
+    void build_heap_tree(std::vector<Node<T>*>& nodes) {
         if (nodes.empty()) {
-            root.reset();
+            root = nullptr;
             return;
         }
 
         root = nodes[0];
-        std::queue<std::shared_ptr<Node<T>>> q;
+        std::queue<Node<T>*> q;
         q.push(root);
         int index = 1;
 
         while (index < nodes.size()) {
-            auto current = q.front();
+            Node<T>* current = q.front();
             q.pop();
             current->children.clear(); // Clear existing children
 
@@ -352,19 +346,13 @@ public:
         }
     }
 
-
     // Destructor to delete the entire tree
-    void delete_tree(std::shared_ptr<Node<T>> node) {
+    void delete_tree(Node<T>* node) {
         if (!node) return;
         for (auto& child : node->children) {
             delete_tree(child);
         }
-        node.reset();
-    }
-
-    // Printing Tree using GUI
-    void printTree(MainWindow& window) const {
-        window.updateTreeWidget(root);
+        delete node;
     }
 };
 
