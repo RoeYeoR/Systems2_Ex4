@@ -10,10 +10,17 @@ public:
 
     Complex(double r = 0.0, double i = 0.0) : real(r), imag(i) {}
 
-    // Comparison operators
+    // Define comparison operators based on the real part
     bool operator<(const Complex& other) const {
-        // Compare based on some criteria, for example, magnitude or real part
-        return (real < other.real) || ((real == other.real) && (imag < other.imag));
+        return real < other.real;
+    }
+
+    bool operator>(const Complex& other) const {
+        return real > other.real;
+    }
+
+    bool operator==(const Complex& other) const {
+        return real == other.real && imag == other.imag;
     }
 
 

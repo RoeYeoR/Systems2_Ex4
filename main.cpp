@@ -2,10 +2,21 @@
 #include "tree.hpp"
 #include "complex.hpp"
 #include <iostream>
+#include "designwindow.hpp"
 
 int main(int argc, char *argv[])
 {
+    QApplication app(argc, argv);
+    designWindow window; // Create your main window
+
+
+
+    std::cout << std::endl;
+    std::cout <<"Actions on binary tree !" <<std::endl;
+    std::cout << std::endl;
+
     Tree<Complex> tree;
+
     tree.add_root(Complex(1.1, 2.2));
     auto n1 = std::make_shared<Node<Complex>>(Complex(1.2, 2.3));
     auto n2 = std::make_shared<Node<Complex>>(Complex(1.3, 2.4));
@@ -137,6 +148,46 @@ int main(int argc, char *argv[])
         std::cout << (*it)->get_value() << " ";
     }
     std::cout << std::endl;
+    std::cout << std::endl;
+
+
+
+    std::cout <<"Actions on 5-ary tree !" <<std::endl;
+    std::cout << std::endl;
+
+    Tree<Complex, 5> tree2;
+    tree2.add_root(Complex(10.0, 2.0));
+    tree2.add_sub_node(tree2.root, Complex(5.0, 2.1));
+    tree2.add_sub_node(tree2.root, Complex(6.0, 2.2));
+    tree2.add_sub_node(tree2.root, Complex(7.0, 2.3));
+    tree2.add_sub_node(tree2.root, Complex(8.0, 2.4));
+    tree2.add_sub_node(tree2.root, Complex(9.0, 2.5));
+    tree2.add_sub_node(tree2.root->children[0], Complex(1.0, 2.6));
+    tree2.add_sub_node(tree2.root->children[0], Complex(2.0, 2.7));
+    tree2.add_sub_node(tree2.root->children[0], Complex(3.0, 2.8));
+    tree2.add_sub_node(tree2.root->children[0], Complex(4.0, 2.9));
+
+    // BFS Traversal
+    std::cout << "BFS Traversal after adding more nodes: ";
+    for (auto it = tree2.begin_bfs_scan(); it != tree2.end_bfs_scan(); ++it) {
+        std::cout << (*it)->get_value() << " ";
+    }
+    std::cout << std::endl;
+
+    // DFS Traversal
+    std::cout << "DFS Traversal after adding more nodes: ";
+    for (auto it = tree2.begin_dfs_scan(); it != tree2.end_dfs_scan(); ++it) {
+        std::cout << (*it)->get_value() << " ";
+    }
+    std::cout << std::endl;
+
+    // Print tree to GUI
+    tree.printTree(mainWindow);
+
+    // Show the main window
+    mainWindow.show();
+
+    return app.exec();
 
     return 0;
 }
