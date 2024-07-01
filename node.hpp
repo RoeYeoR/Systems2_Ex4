@@ -7,7 +7,7 @@ template <typename T>
 class Node {
 public:
     T value;
-    std::vector<Node<T>*> children; // Using raw pointers
+    std::vector<Node<T>*> children; 
 
     Node(T val) : value(val) {}
 
