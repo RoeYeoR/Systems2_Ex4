@@ -1,6 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -g 
-
+CXXFLAGS = -std=c++11 -g
 
 SRCS_TREE = main.cpp
 SRCS_TEST = Test.cpp TestCounter.cpp
@@ -14,14 +13,13 @@ TEST_HEADERS = doctest.h
 all: tree test
 
 tree: $(OBJS_TREE)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ 
 
 test: $(OBJS_TEST)
-	$(CXX) $(CXXFLAGS)  $^ -o $@ -lstdc++
-	
+	$(CXX) $(CXXFLAGS) $^ -o $@ -lstdc++
 
 %.o: %.cpp $(HEADERS) $(TEST_HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS)  -c $< -o $@
 
 clean:
 	rm -f $(OBJS_TREE) $(OBJS_TEST) tree test
