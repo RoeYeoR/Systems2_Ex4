@@ -1,3 +1,6 @@
+//315144972
+//roeyshmil09@gmail.com
+
 #ifndef NODE_HPP
 #define NODE_HPP
 
@@ -10,7 +13,7 @@ public:
     std::vector<Node<T>*> children;
 
     Node(T val) : value(val) {}
-    
+
     T get_value() const {
         return value;
     }
